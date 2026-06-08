@@ -12,22 +12,25 @@ public class UILineGraph : MonoBehaviour
     [Header("座標軸與格線設定")]
     public RectTransform gridLineTemplate;
     public Text labelTemplate;
+    public RectTransform costLineTemplate;
+
+    [Header("功能性模板 (新增)")]
+    public Text currentPriceLabelTemplate; // 新增：顯示當前現價的文字模板 (若用 TextMeshPro，請改型別為 TMP_Text)
 
     [Header("圖表設定")]
     public float lineThickness = 3f;
-    public int yAxisGridCount = 4; // 切成 4 等分 (平盤、一半、漲跌停)
-    public int maxVisiblePoints = 60; // 新增：鎖定 X 軸最大顯示 60 筆 (60秒)
+    public int yAxisGridCount = 4;
+    public int maxVisiblePoints = 60;
 
     private float yMaximum;
     private float yMinimum;
     private List<GameObject> activeUIElements = new List<GameObject>();
 
-    // 新增 basePrice (昨收平盤價)，用來計算 10% 漲跌停
-    public void ShowGraph(List<float> valueList, float basePrice)
+    public void ShowGraph(List<float> valueList, float basePrice, float averageCost = 0f)
     {
         ClearGraph();
 
-        // 核心邏輯：台灣股市上下 10% 作為 Y 軸的極限
+        // 核心邏輯：台股上下 10% 為 Y 軸極限
         yMaximum = basePrice * 1.1f; 
         yMinimum = basePrice * 0.9f;
 
@@ -39,6 +42,35 @@ public class UILineGraph : MonoBehaviour
 
         Vector2 lastCirclePosition = Vector2.zero;
 
+        // 取得當前最新價格 (清單最後一筆)
+        float currentPrice = valueList[valueList.Count - 1];
+
+        // --- 畫出持股成本線 (維持原樣) ---
+        if (averageCost > 0 && costLineTemplate != null)
+        {
+            float yNormalized = (averageCost - yMinimum) / (yMaximum - yMinimum);
+            float yPosition = yNormalized * graphHeight;
+
+            RectTransform costLine = Instantiate(costLineTemplate, graphContainer);
+            costLine.gameObject.SetActive(true);
+            
+            // 強制復位 X 軸設定，避免歪掉
+            costLine.anchorMin = new Vector2(0, 0);
+            costLine.anchorMax = new Vector2(0, 0);
+            costLine.pivot = new Vector2(0, 0.5f);
+            
+            costLine.anchoredPosition = new Vector2(0, yPosition); // 程式碼強制 X 為 0
+            costLine.sizeDelta = new Vector2(graphWidth, 4f); 
+
+            Image lineImage = costLine.GetComponent<Image>();
+            if (lineImage != null)
+            {
+                lineImage.color = currentPrice >= averageCost ? new Color(1f, 0.3f, 0.3f) : new Color(0.3f, 1f, 0.3f);
+            }
+            activeUIElements.Add(costLine.gameObject);
+        }
+
+        // --- 畫資料點與連線 (維持原樣) ---
         for (int i = 0; i < valueList.Count; i++)
         {
             float xPosition = i * xSize;
@@ -54,8 +86,39 @@ public class UILineGraph : MonoBehaviour
             }
             lastCirclePosition = circlePosition;
         }
+
+        // --- 畫出「當前現價標籤」 (新增功能) ---
+        if (currentPriceLabelTemplate != null)
+        {
+            // 計算最後一筆價格在 UI 容器的高度位置
+            float yNormalized = (currentPrice - yMinimum) / (yMaximum - yMinimum);
+            float yPosition = yNormalized * graphHeight;
+            // 計算最右端點的 X 軸位置
+            float xPosition = (valueList.Count - 1) * xSize;
+
+            Text label = Instantiate(currentPriceLabelTemplate, graphContainer);
+            label.gameObject.SetActive(true);
+
+            // 強制鎖死錨點在左下角，Pivot 在左邊，方便定位
+            label.rectTransform.anchorMin = new Vector2(0, 0);
+            label.rectTransform.anchorMax = new Vector2(0, 0);
+            label.rectTransform.pivot = new Vector2(0, 0.5f);
+
+            // 將標籤移動到最後一個點的位置，並往右推 20 像素以免撞到
+            label.rectTransform.anchoredPosition = new Vector2(xPosition + 20f, yPosition);
+
+            // 更新文字內容為當前價格 (顯示小數點第一位)
+            label.text = currentPrice.ToString("0.0");
+            
+            // 統一顏色格式 (台股紅賺綠賠)
+            label.color = currentPrice >= basePrice ? new Color(1f, 0.3f, 0.3f) : new Color(0.3f, 1f, 0.3f);
+            
+            activeUIElements.Add(label.gameObject);
+        }
     }
 
+    // DrawGrid, CreateCircle 和 CreateDotConnection 保持原樣...
+    // 但在 DrawGrid 裡更新 label.text 顯示格式為ToString("0.0")，並將顏色顏色
     private void DrawGrid(float basePrice)
     {
         float graphWidth = graphContainer.sizeDelta.x;
@@ -66,12 +129,10 @@ public class UILineGraph : MonoBehaviour
             float normalizedY = (float)i / yAxisGridCount;
             float yPosition = normalizedY * graphHeight;
 
-            // --- 強制對齊背景格線 ---
             if (gridLineTemplate != null)
             {
                 RectTransform gridLine = Instantiate(gridLineTemplate, graphContainer);
                 gridLine.gameObject.SetActive(true);
-                // 強制鎖死：左下角錨點，中心在左邊緣
                 gridLine.anchorMin = new Vector2(0, 0);
                 gridLine.anchorMax = new Vector2(0, 0);
                 gridLine.pivot = new Vector2(0, 0.5f);
@@ -81,37 +142,28 @@ public class UILineGraph : MonoBehaviour
                 activeUIElements.Add(gridLine.gameObject);
             }
 
-            // --- 強制對齊價格數字標籤 ---
             if (labelTemplate != null)
             {
                 Text label = Instantiate(labelTemplate, graphContainer);
                 label.gameObject.SetActive(true);
-                
-                // 強制鎖死：左下角錨點，中心在右邊緣 (這樣數字會往左長)
                 label.rectTransform.anchorMin = new Vector2(0, 0);
                 label.rectTransform.anchorMax = new Vector2(0, 0);
                 label.rectTransform.pivot = new Vector2(1, 0.5f);
                 
-                // 往左退 10 像素，避免撞到線
                 label.rectTransform.anchoredPosition = new Vector2(-10f, yPosition); 
                 
                 float priceValue = yMinimum + (normalizedY * (yMaximum - yMinimum));
                 
-                // 顯示小數點第一位，方便看清楚微小跳動
+                // 統一格式：顯示小數點第一位
                 label.text = priceValue.ToString("0.0"); 
-                
-                // 如果是平盤價，可以用顏色標記 (選用)
-                if (Mathf.Approximately(priceValue, basePrice))
-                {
-                    label.color = Color.yellow; // 平盤價顯示黃色
-                }
+                // 統一顏色：白色 (與背景格線區分)
+                label.color = Color.white;
 
                 activeUIElements.Add(label.gameObject);
             }
         }
     }
 
-    // CreateCircle 和 CreateDotConnection 保持原樣...
     private void CreateCircle(Vector2 anchoredPosition)
     {
         RectTransform circle = Instantiate(circleTemplate, graphContainer);

@@ -429,7 +429,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2cfd75e869929f44c8ba380760a31c11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LiveMarketController
-  lineGraph: {fileID: 0}
+  lineGraph: {fileID: 977078888}
   basePrice: 850
   updateInterval: 1
 --- !u!1 &943820292
