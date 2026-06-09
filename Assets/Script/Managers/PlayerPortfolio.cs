@@ -26,6 +26,12 @@ public class PlayerPortfolio : MonoBehaviour
         else Instance = this;
     }
 
+    private void Start()
+    {
+        // 遊戲一開局就強制更新一次 UI，讓十萬本金顯示在畫面上
+        UpdateUI(); 
+    }
+
     // 市價買進 1000 股 (一張)
     public void BuyStock()
     {
@@ -90,7 +96,7 @@ public class PlayerPortfolio : MonoBehaviour
         }
     }
 
-    private void UpdateUI()
+    public void UpdateUI()
     {
         if (cashText != null) cashText.text = $"交割戶餘額: ${cash:0}";
         if (sharesText != null) sharesText.text = $"持有股數: {sharesOwned} (均價: {averageCost:0.0})";

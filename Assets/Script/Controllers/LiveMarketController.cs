@@ -32,6 +32,12 @@ public class LiveMarketController : MonoBehaviour
 
     void Update()
     {
+        // 如果時間管理器存在，且現在不是營業時間，就直接暫停跳動！
+        if (GameTimeManager.Instance != null && !GameTimeManager.Instance.isMarketOpen)
+        {
+            return; 
+        }
+
         // 計時器：每 1 秒觸發一次
         timer += Time.deltaTime;
         if (timer >= updateInterval)
@@ -41,7 +47,7 @@ public class LiveMarketController : MonoBehaviour
         }
     }
 
-    private void GenerateNewTick()
+    public void GenerateNewTick()
     {
         // 1. 先計算出原始的隨機價格
         float volatility = Random.Range(-0.01f, 0.01f);
