@@ -96,7 +96,7 @@ public class GameTimeManager : MonoBehaviour
             // 3. 如果開盤了，強迫股市瞬間生出一筆資料補上圖表！
             if (isMarketOpen && LiveMarketController.Instance != null)
             {
-                LiveMarketController.Instance.GenerateNewTick();
+                LiveMarketController.Instance.GenerateNewTickForAllStocks();
             }
         }
 
@@ -106,4 +106,31 @@ public class GameTimeManager : MonoBehaviour
             timeText.text = $"{Mathf.FloorToInt(currentHour):00}:{Mathf.FloorToInt(currentMinute):00}";
         }
     }
+
+    // --- 新增：直接跳到隔天早上 08:30 ---
+    public void AdvanceToNextDay()
+    {
+        // 直接將時間重置為 08:30
+        currentHour = 8f;
+        currentMinute = 30f;
+        
+        // 強制關閉市場 (避免有任何跨日狀態殘留)
+        isMarketOpen = false;
+
+        // --- 新增這段：通知股市清空昨天的走勢圖 ---
+        if (LiveMarketController.Instance != null)
+        {
+            LiveMarketController.Instance.ResetMarketForNewDay();
+        }
+        // ----------------------------------------
+
+        // 更新時間 UI
+        if (timeText != null)
+        {
+            timeText.text = $"{Mathf.FloorToInt(currentHour):00}:{Mathf.FloorToInt(currentMinute):00}";
+        }
+
+        Debug.Log("🌅 新的一天開始了！時間來到 08:30。");
+    }
 }
+

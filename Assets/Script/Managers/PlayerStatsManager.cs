@@ -15,11 +15,8 @@ public class PlayerStatsManager : MonoBehaviour
     public Text stressText;
     public Text satietyText;
 
-    [Header("打工設定")]
-    public float workCashReward = 600f; // 打工一次賺 600 元
-    public float workEnergyCost = 40f;  // 消耗體力
-    public float workStressGain = 20f;  // 增加壓力
-    public float workHourCost = 4f;     // 每次打工消耗 4 小時遊戲時間
+    [Header("生活開銷")]
+    public float dailyExpense = 1500f;  // 每天睡醒要扣除的房租、水電、飯錢
 
     private void Awake()
     {
@@ -40,17 +37,25 @@ public class PlayerStatsManager : MonoBehaviour
     // 處理隨時間變化的數值 (例如：看盤賠錢會增加壓力)
     private void HandlePassiveStatChanges()
     {
-        // 只有在有持股且市場營業時，才結算看盤壓力
+        // 確保所有管理器都存在，且市場正在營業
         if (PlayerPortfolio.Instance == null || LiveMarketController.Instance == null || GameTimeManager.Instance == null) return;
         if (!GameTimeManager.Instance.isMarketOpen) return;
 
-        float currentPrice = LiveMarketController.Instance.GetCurrentPrice();
-        float unrealizedProfit = (currentPrice - PlayerPortfolio.Instance.averageCost) * PlayerPortfolio.Instance.sharesOwned;
+        // 【修正】：獲取目前玩家畫面上正在觀看的股票
+        StockData currentStock = LiveMarketController.Instance.GetCurrentSelectedStock();
+        if (currentStock == null) return;
+
+        // 【修正】：帶入 currentStock 參數向各系統查詢對應數值
+        float currentPrice = LiveMarketController.Instance.GetCurrentPrice(currentStock);
+        int sharesOwned = PlayerPortfolio.Instance.GetSharesOwned(currentStock);
+        float averageCost = PlayerPortfolio.Instance.GetAverageCost(currentStock);
+
+        float unrealizedProfit = (currentPrice - averageCost) * sharesOwned;
         
-        // 如果目前有持股，且未實現損益為負 (跌破成本線)
-        if (PlayerPortfolio.Instance.sharesOwned > 0 && unrealizedProfit < 0)
+        // 如果目前這檔股票有持股，且處於賠錢狀態
+        if (sharesOwned > 0 && unrealizedProfit < 0)
         {
-            // 賠錢時，壓力每秒上升 (數字越高死越快)
+            // 賠錢時，壓力每秒上升
             stress += 1f * Time.deltaTime;
             stress = Mathf.Clamp(stress, 0f, 100f);
             UpdateUI();
@@ -62,35 +67,32 @@ public class PlayerStatsManager : MonoBehaviour
         }
     }
 
-    // --- 玩家行為：去超商打工 ---
-    public void GoToWork()
+    // --- 修改：接收 JobData 的打工方法 ---
+    public void DoJob(JobData jobData)
     {
-        if (energy >= workEnergyCost)
+        if (energy >= jobData.energyCost)
         {
-            // 扣除體力、增加壓力
-            energy -= workEnergyCost;
-            stress += workStressGain;
+            energy -= jobData.energyCost;
+            stress += jobData.stressGain;
             stress = Mathf.Clamp(stress, 0f, 100f);
             
-            // 推進遊戲時間
             if (GameTimeManager.Instance != null)
             {
-                GameTimeManager.Instance.SkipTime(workHourCost);
+                GameTimeManager.Instance.SkipTime(jobData.hoursTaken);
             }
 
-            // 將辛苦賺來的工資匯入交割戶
             if (PlayerPortfolio.Instance != null)
             {
-                PlayerPortfolio.Instance.cash += workCashReward;
+                PlayerPortfolio.Instance.cash += jobData.salary;
                 PlayerPortfolio.Instance.UpdateUI();
             }
 
-            Debug.Log($"🏪 [血汗打工] 耗時 {workHourCost} 小時，賺取 ${workCashReward}！消耗體力 {workEnergyCost}，壓力增加 {workStressGain}。");
+            Debug.Log($"🏪 [打工] 執行【{jobData.jobName}】！耗時 {jobData.hoursTaken} 小時，賺取 ${jobData.salary}。");
             UpdateUI();
         }
         else
         {
-            Debug.LogWarning("❌ [過勞警告] 體力不足，無法打工！請先休息。");
+            Debug.LogWarning($"❌ [過勞警告] 體力不足以進行【{jobData.jobName}】！");
         }
     }
 
@@ -105,5 +107,38 @@ public class PlayerStatsManager : MonoBehaviour
             stressText.color = Color.Lerp(Color.white, Color.red, stress / 100f);
         }
         if (satietyText != null) satietyText.text = $"飽食度: {satiety:0}";
+    }
+
+    // --- 新增：上床睡覺 (換日與扣除生活費) ---
+    public void GoToSleep()
+    {
+        // 1. 推進時間到隔天
+        if (GameTimeManager.Instance != null)
+        {
+            GameTimeManager.Instance.AdvanceToNextDay();
+        }
+
+        // 2. 恢復體力與稍微降低壓力 (睡覺也是能紓壓的！)
+        energy = 100f;
+        stress -= 10f; // 睡一覺壓力少 10
+        stress = Mathf.Clamp(stress, 0f, 100f);
+
+        // 3. 殘酷結算：扣除生活基本開銷
+        if (PlayerPortfolio.Instance != null)
+        {
+            PlayerPortfolio.Instance.cash -= dailyExpense;
+            PlayerPortfolio.Instance.UpdateUI();
+
+            Debug.Log($"🛏️ [換日結算] 睡了一覺，體力恢復！扣除每日生活費 ${dailyExpense}。");
+
+            // 檢查是否破產
+            if (PlayerPortfolio.Instance.cash < 0)
+            {
+                Debug.LogError("💀 [Game Over] 交割戶餘額為負，繳不出房租，流落街頭！");
+                // TODO: 未來可以在這裡跳出「破產結算畫面」並暫停遊戲
+            }
+        }
+
+        UpdateUI();
     }
 }
