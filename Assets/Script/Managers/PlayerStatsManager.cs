@@ -139,6 +139,20 @@ public class PlayerStatsManager : MonoBehaviour
             }
         }
 
+        // 🔗【加入這段】：通知職涯系統新的一天開始了，請重製摸魚時間
+        if (CareerManager.Instance != null)
+        {
+            CareerManager.Instance.ResetMoyuTimeForNewDay();
+            Debug.Log("☀️ [系統] 新的一天開始，今日摸魚時間已重製！");
+        }
+
+        // 🔗【同步優化】：如果有開著職涯頁面，也順便叫 UI 重新整理一下靜態文字
+        CareerUIController uiController = FindObjectOfType<CareerUIController>();
+        if (uiController != null && uiController.gameObject.activeSelf)
+        {
+            uiController.UpdateStaticJobUI();
+        }
+
         UpdateUI();
     }
 }
