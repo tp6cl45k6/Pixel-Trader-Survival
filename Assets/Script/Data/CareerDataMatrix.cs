@@ -35,6 +35,9 @@ public class JobPosition
     public float energyCostPerDay;   
     public float stressGainPerDay;   
 
+    // 🔥【今日新增】這份工作是否已經在佈告欄解鎖可應徵？
+    public bool isUnlocked = false;  
+
     public string companyName
     {
         get
@@ -56,4 +59,11 @@ public class IndustryTrack
     public string industryId;        
     public string industryName;      
     public List<JobPosition> ranks = new List<JobPosition>();  
+}
+
+// 4. JSON 專用根目錄包裝器
+[System.Serializable]
+public class CareerDatabaseRoot
+{
+    public List<IndustryTrack> industries = new List<IndustryTrack>();
 }

@@ -230,6 +230,7 @@ MonoBehaviour:
   txtTitle: {fileID: 6551207088464080305}
   txtSalary: {fileID: 1802448098405575034}
   txtAcceptanceRate: {fileID: 4541929685657331162}
+  btnApply: {fileID: 2852610338175962328}
 --- !u!1 &5839071180834908126
 GameObject:
   m_ObjectHideFlags: 0

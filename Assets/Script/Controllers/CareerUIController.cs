@@ -8,12 +8,16 @@ public class CareerUIController : MonoBehaviour
     public GameObject jobItemPrefab;  
 
     [Header("左側當前狀態 UI 綁定")]
-    public Text txtCurrentJobTitle;       // 顯示目前職稱
-    public Text txtCurrentSalary;         // 顯示目前日薪
-    public Text txtKpiDescription;        // 顯示中央的每日任務
-    public Text txtMoyuTimerLabel;        // 顯示剩餘摸魚時間文字 (例如: 摸魚剩餘: 45分)
-    public Slider sldMoyuTimer;           // 顯示摸魚時間進度條
-    public Text txtWorkTimeRange;         // 【新增】顯示上班時間範圍的文字框 (例如：09:00 - 17:00)
+    public Text txtCurrentJobTitle;       
+    public Text txtCurrentSalary;         
+    public Text txtKpiDescription;        
+    public Text txtMoyuTimerLabel;        
+    public Slider sldMoyuTimer;           
+    public Text txtWorkTimeRange;         
+    
+    // 🔥【今日新增】綁定藍色考績條
+    public Slider sldPerformance;           // 顯示當前職位考績進度條
+    public Text txtPerformanceLabel;        // 顯示考績數字 (例如: 考績 35/100)
 
     private void Start()
     {
@@ -23,52 +27,49 @@ public class CareerUIController : MonoBehaviour
 
     private void Update()
     {
-        // 每幀即時刷新摸魚計時器與進度條
         if (CareerManager.Instance != null && CareerManager.Instance.currentJob != null)
         {
             JobPosition currentJob = CareerManager.Instance.currentJob;
 
-            // 1. 更新計時器文字
+            // 1. 更新摸魚計時器與進度條... (這段維持昨天的邏輯)
             if (txtMoyuTimerLabel != null)
             {
                 if (currentJob.jobId == "unemployed")
-                {
                     txtMoyuTimerLabel.text = "全職看盤中 (時間無限)";
-                }
                 else
-                {
                     txtMoyuTimerLabel.text = CareerManager.Instance.isOnDuty 
                         ? $"上班中！摸魚剩餘: {Mathf.CeilToInt(CareerManager.Instance.currentMoyuTimeLeft)} 分鐘"
                         : $"非上班時間 (今日摸魚額度: {currentJob.totalMoyuMinutes} 分)";
-                }
             }
 
-            // 2. 更新進度條 Slider
             if (sldMoyuTimer != null)
+            {
+                if (currentJob.jobId == "unemployed") sldMoyuTimer.value = 1f; 
+                else sldMoyuTimer.value = CareerManager.Instance.currentMoyuTimeLeft / currentJob.totalMoyuMinutes;
+            }
+
+            // 🔥【今日新增】2. 更新考績進度條 Slider
+            if (sldPerformance != null)
             {
                 if (currentJob.jobId == "unemployed")
                 {
-                    sldMoyuTimer.value = 1f; // 失業時進度條永遠滿格
+                    sldPerformance.value = 0f; 
+                    if (txtPerformanceLabel != null) txtPerformanceLabel.text = "失業中 (無考績)";
                 }
                 else
                 {
-                    // 計算剩餘時間百分比
-                    sldMoyuTimer.value = CareerManager.Instance.currentMoyuTimeLeft / currentJob.totalMoyuMinutes;
+                    // 把 0~100 的分數轉換成 0~1 的比例給 Slider
+                    sldPerformance.value = CareerManager.Instance.currentPerformance / 100f;
+                    if (txtPerformanceLabel != null) txtPerformanceLabel.text = $"考績達成率: {CareerManager.Instance.currentPerformance:0} / 100";
                 }
             }
         }
     }
 
-    // 重新繪製所有的職缺按鈕 (當玩家能力提升、錄取率改變時可以呼叫此方法刷新列表)
     public void PopulateJobBoard()
     {
         if (CareerManager.Instance == null || jobBoardContent == null || jobItemPrefab == null) return;
-
-        // 先清空舊的按鈕
-        foreach (Transform child in jobBoardContent)
-        {
-            Destroy(child.gameObject);
-        }
+        foreach (Transform child in jobBoardContent) Destroy(child.gameObject);
 
         foreach (var track in CareerManager.Instance.industryDatabase)
         {
@@ -76,37 +77,33 @@ public class CareerUIController : MonoBehaviour
             {
                 GameObject btnObj = Instantiate(jobItemPrefab, jobBoardContent);
                 JobItemUI uiScript = btnObj.GetComponent<JobItemUI>();
-                if (uiScript != null)
-                {
-                    uiScript.Setup(job);
-                }
+                if (uiScript != null) uiScript.Setup(job);
             }
         }
     }
 
-    // 當面試成功換工作時，呼叫此方法更新左側與中央的固定文字
     public void UpdateStaticJobUI()
     {
         if (CareerManager.Instance == null || CareerManager.Instance.currentJob == null) return;
-
         JobPosition job = CareerManager.Instance.currentJob;
 
         if (txtCurrentJobTitle != null) txtCurrentJobTitle.text = $"目前職位: {job.jobTitle}";
         if (txtCurrentSalary != null)   txtCurrentSalary.text = $"每日薪資: ${job.dailySalary}";
         if (txtKpiDescription != null)  txtKpiDescription.text = $"【今日工作 KPI】\n{job.kpiDescription}";
         
-        // 【新增】動態顯示該工作的上班時間區間
         if (txtWorkTimeRange != null)
         {
-            if (job.jobId == "unemployed")
-            {
-                txtWorkTimeRange.text = "上班時間：無限制";
-            }
-            else
-            {
-                // 格式化成 09:00 的樣子
-                txtWorkTimeRange.text = $"上班時間：{job.startHour:00}:00 - {job.endHour:00}:00";
-            }
+            if (job.jobId == "unemployed") txtWorkTimeRange.text = "上班時間：無限制";
+            else txtWorkTimeRange.text = $"上班時間：{job.startHour:00}:00 - {job.endHour:00}:00";
+        }
+    }
+
+    // 🔥【今日新增】綁定給「認真工作」按鈕點擊用
+    public void OnBtnWorkHardClicked()
+    {
+        if (CareerManager.Instance != null)
+        {
+            CareerManager.Instance.WorkHard();
         }
     }
 }
