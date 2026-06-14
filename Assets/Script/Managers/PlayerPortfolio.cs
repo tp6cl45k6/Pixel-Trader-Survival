@@ -58,21 +58,21 @@ public class PlayerPortfolio : MonoBehaviour
     public void BuyStock()
     {
         // 詢問市場目前畫面上選中的是哪一檔股票
-        StockData currentStock = LiveMarketController.Instance.GetCurrentSelectedStock();
+        Stock currentStock = LiveMarketController.Instance.GetCurrentSelectedStock();
         if (currentStock == null) return;
 
-        float currentPrice = LiveMarketController.Instance.GetCurrentPrice(currentStock);
+        float currentPrice = currentStock.currentPrice;
         float totalCost = currentPrice * 1000f;
 
         if (cash >= totalCost)
         {
-            StockPosition pos = GetPosition(currentStock);
+            StockPosition pos = GetPosition(currentStock.baseData);
             float oldTotalCost = pos.sharesOwned * pos.averageCost;
             pos.sharesOwned += 1000;
             pos.averageCost = (oldTotalCost + totalCost) / pos.sharesOwned;
 
             cash -= totalCost;
-            Debug.Log($"[買進成功] 買入 {currentStock.stockName}, 價格: {currentPrice:0.0}, 現金: {cash:0}");
+            Debug.Log($"[買進成功] 買入 {currentStock.name}, 價格: {currentPrice:0.0}, 現金: {cash:0}");
             UpdateUI();
 
             ShowFloatingText($"-{totalCost:0}", Color.green, buyButtonTransform);
@@ -85,11 +85,11 @@ public class PlayerPortfolio : MonoBehaviour
 
     public void SellStock()
     {
-        StockData currentStock = LiveMarketController.Instance.GetCurrentSelectedStock();
+        Stock currentStock = LiveMarketController.Instance.GetCurrentSelectedStock();
         if (currentStock == null) return;
 
-        float currentPrice = LiveMarketController.Instance.GetCurrentPrice(currentStock);
-        StockPosition pos = GetPosition(currentStock);
+        float currentPrice = currentStock.currentPrice;
+        StockPosition pos = GetPosition(currentStock.baseData);
 
         if (pos.sharesOwned >= 1000)
         {
@@ -99,7 +99,7 @@ public class PlayerPortfolio : MonoBehaviour
             if (pos.sharesOwned == 0) pos.averageCost = 0f;
 
             cash += totalRevenue;
-            Debug.Log($"[賣出成功] 賣出 {currentStock.stockName}, 價格: {currentPrice:0.0}, 現金: {cash:0}");
+            Debug.Log($"[賣出成功] 賣出 {currentStock.name}, 價格: {currentPrice:0.0}, 現金: {cash:0}");
             UpdateUI();
 
             ShowFloatingText($"+{totalRevenue:0}", Color.red, sellButtonTransform);
@@ -114,8 +114,8 @@ public class PlayerPortfolio : MonoBehaviour
     public void UpdateUnrealizedProfit(StockData stock, float currentPrice)
     {
         // 只有當前正在觀看的股票，才去刷新 UI 面板上的損益文字
-        StockData currentStock = LiveMarketController.Instance.GetCurrentSelectedStock();
-        if (stock != currentStock) return;
+        Stock currentStock = LiveMarketController.Instance != null ? LiveMarketController.Instance.GetCurrentSelectedStock() : null;
+        if (currentStock == null || stock != currentStock.baseData) return;
 
         StockPosition pos = GetPosition(stock);
         if (pos.sharesOwned == 0)
@@ -136,11 +136,11 @@ public class PlayerPortfolio : MonoBehaviour
     {
         if (cashText != null) cashText.text = $"交割戶餘額: ${cash:0}";
         
-        StockData currentStock = LiveMarketController.Instance != null ? LiveMarketController.Instance.GetCurrentSelectedStock() : null;
+        Stock currentStock = LiveMarketController.Instance != null ? LiveMarketController.Instance.GetCurrentSelectedStock() : null;
         if (currentStock != null && sharesText != null)
         {
-            StockPosition pos = GetPosition(currentStock);
-            sharesText.text = $"{currentStock.stockName} 持有: {pos.sharesOwned / 1000} 張 (均價: {pos.averageCost:0.0})";
+            StockPosition pos = GetPosition(currentStock.baseData);
+            sharesText.text = $"{currentStock.name} 持有: {pos.sharesOwned / 1000} 張 (均價: {pos.averageCost:0.0})";
         }
     }
 

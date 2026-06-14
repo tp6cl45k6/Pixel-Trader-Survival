@@ -94,10 +94,11 @@ public class GameTimeManager : MonoBehaviour
             CheckMarketStatus();
 
             // 3. 如果開盤了，強迫股市瞬間生出一筆資料補上圖表！
-            if (isMarketOpen && LiveMarketController.Instance != null)
-            {
-                LiveMarketController.Instance.GenerateNewTickForAllStocks();
-            }
+            // 已經由 MarketManager 自動跳動處理，此處刪除 / 註解掉
+            // if (isMarketOpen && LiveMarketController.Instance != null)
+            // {
+            //     LiveMarketController.Instance.GenerateNewTickForAllStocks();
+            // }
         }
 
         // 快轉完畢，強制更新一次 UI
@@ -118,9 +119,9 @@ public class GameTimeManager : MonoBehaviour
         isMarketOpen = false;
 
         // --- 新增這段：通知股市清空昨天的走勢圖 ---
-        if (LiveMarketController.Instance != null)
+        if (MarketManager.Instance != null)
         {
-            LiveMarketController.Instance.ResetMarketForNewDay();
+            MarketManager.Instance.ResetMarketForNewDay();
         }
         // ----------------------------------------
 

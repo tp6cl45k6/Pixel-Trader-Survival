@@ -1,11 +1,26 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-// 這個標籤讓你在 Unity 專案區按右鍵可以自動產生這個檔案
-[CreateAssetMenu(fileName = "NewStock", menuName = "PixelTrader/Stock Data")]
-public class StockData : ScriptableObject
+// 1. 單檔股票的基礎設定資料
+[System.Serializable]
+public class StockData
 {
-    public string stockCode = "00919";       // 股票代號
-    public string stockName = "群益台灣精選高息"; // 股票名稱
-    public float basePrice = 25.0f;          // 初始開盤價
-    public float volatility = 0.005f;        // 波動度 (大盤股波動大，ETF波動小)
+    public string stockId;          // 股票代號 (例: "2330")
+    public string stockName;        // 股票名稱 (例: "護國神山")
+    public string category;         // 分類 (例: "半導體", "高股息ETF", "航運")
+    
+    [Header("數值設定")]
+    public float basePrice;         // 遊戲開局初始股價
+    public float volatility;        // 波動度 (影響每次跳動的幅度，例如 0.02 代表 2% 波動)
+    public float trendBias;         // 趨勢偏好 (大於0易漲，小於0易跌，0為純隨機)
+    
+    [TextArea]
+    public string description;      // 股票描述
+}
+
+// 2. JSON 專用根目錄包裝器
+[System.Serializable]
+public class StockDatabaseRoot
+{
+    public List<StockData> stocks = new List<StockData>();
 }

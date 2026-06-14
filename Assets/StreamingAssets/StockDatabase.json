@@ -1,0 +1,49 @@
+{
+    "stocks": [
+        {
+            "stockId": "2330",
+            "stockName": "護國神山 (TSMC)",
+            "category": "半導體",
+            "basePrice": 850.0,
+            "volatility": 0.014999999664723874,
+            "trendBias": 0.0020000000949949028,
+            "description": "台股的心臟，外資的提款機。長期看好，但容易受國際局勢影響。"
+        },
+        {
+            "stockId": "0056",
+            "stockName": "元老高股息 ETF",
+            "category": "ETF",
+            "basePrice": 38.5,
+            "volatility": 0.004999999888241291,
+            "trendBias": 0.0010000000474974514,
+            "description": "散戶最愛，穩定配息，波動極小，適合上班沒空看盤的人。"
+        },
+        {
+            "stockId": "00919",
+            "stockName": "群益精選高息",
+            "category": "ETF",
+            "basePrice": 25.0,
+            "volatility": 0.00800000037997961,
+            "trendBias": 0.001500000013038516,
+            "description": "近期熱門的高股息新星，配息率驚人，深受小資族喜愛。"
+        },
+        {
+            "stockId": "2603",
+            "stockName": "長榮海運",
+            "category": "航運",
+            "basePrice": 200.0,
+            "volatility": 0.04500000178813934,
+            "trendBias": -0.0010000000474974514,
+            "description": "航海王！波動巨大，一天天堂一天地獄，喜歡刺激的當沖客首選。"
+        },
+        {
+            "stockId": "2454",
+            "stockName": "發哥 (聯發科)",
+            "category": "IC設計",
+            "basePrice": 1150.0,
+            "volatility": 0.02500000037252903,
+            "trendBias": 0.0010000000474974514,
+            "description": "台灣 IC 設計龍頭，千金股俱樂部成員，跳動一檔就是幾千塊上下。"
+        }
+    ]
+}

@@ -42,13 +42,13 @@ public class PlayerStatsManager : MonoBehaviour
         if (!GameTimeManager.Instance.isMarketOpen) return;
 
         // 【修正】：獲取目前玩家畫面上正在觀看的股票
-        StockData currentStock = LiveMarketController.Instance.GetCurrentSelectedStock();
+        Stock currentStock = LiveMarketController.Instance.GetCurrentSelectedStock();
         if (currentStock == null) return;
 
-        // 【修正】：帶入 currentStock 參數向各系統查詢對應數值
-        float currentPrice = LiveMarketController.Instance.GetCurrentPrice(currentStock);
-        int sharesOwned = PlayerPortfolio.Instance.GetSharesOwned(currentStock);
-        float averageCost = PlayerPortfolio.Instance.GetAverageCost(currentStock);
+        // 【修正】：直接向實體股票與 Portfolio 查詢對應數值
+        float currentPrice = currentStock.currentPrice;
+        int sharesOwned = PlayerPortfolio.Instance.GetSharesOwned(currentStock.baseData);
+        float averageCost = PlayerPortfolio.Instance.GetAverageCost(currentStock.baseData);
 
         float unrealizedProfit = (currentPrice - averageCost) * sharesOwned;
         
